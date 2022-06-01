@@ -16,8 +16,9 @@ This worked, but I really wish I'd gone straight for a Teensy 4.1 :)
   - To bind the IRX4+ to the AR410
     - New firmware download: From the [multi-module firmware page] choose the IRX4+, then the ppm-aetr firmware.
     - New firmware flash: [flash-multi](https://github.com/benlye/flash-multi) tool - note that on the new module, I was getting errors and I had to use the advanced menu to write the bootloader first.
-    - Set Bank to 2 - you can see the required setting in this file [multi-module firmware config.h](https://github.com/pascallanger/DIY-Multiprotocol-TX-Module/blob/dbfccad568ee7f827302390d88e59ea7722af9e1/Multiprotocol/_Config.h#L451)
-    - Set rotary switch to 1 (1 through 8 are all DSM modes, I tried 1, it worked, and I stopped testing)
+    - Set Bank to 2 - [Instructions](https://www.multi-module.org/using-the-module/ppm-mode#protocol-bank-selection) and you can see the required setting in this file [multi-module firmware config.h](https://github.com/pascallanger/DIY-Multiprotocol-TX-Module/blob/dbfccad568ee7f827302390d88e59ea7722af9e1/Multiprotocol/_Config.h#L451)
+    - Set Protocol to 1 (1 through 8 are all DSM modes, I tried 1, it worked, and I stopped testing)
+    - Press the binding button on the AR410 receiver, and boot the Arduino system with the IRX4+ (Make sure the Arduino is already setup, sending signal and wires are connected between the Arduino and the IRX4+ transmitter.
 - SPEKTRUM AR410 receiver ($34.99 each) [Amazon Link](https://www.amazon.com/Spektrum-AR410-4-Channel-Sport-Receiver/dp/B07GS2S7W8)
 - RC Switches
   - Elechawk 4A RC Switch ($9.50 each) [Amazon Link](https://www.amazon.com/gp/product/B08FLZXSD7/)
