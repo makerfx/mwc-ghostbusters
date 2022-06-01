@@ -1,8 +1,9 @@
 # Parts
 
-This project was based off the work in the [RC with Adaptive Controls for Disability: How To Guide](https://www.youtube.com/watch?v=rYxwIrqE7q8) YouTube video. 
+This project was based off the work in the [RC with Adaptive Controls for Disability: How To Guide](https://www.youtube.com/watch?v=rYxwIrqE7q8) YouTube video.
 
-## Arduino Parts for RC Ghost Trap (this worked, but I really wish I'd gone straight for a Teensy 4.1!)
+## Arduino Parts for RC Ghost Trap
+This worked, but I really wish I'd gone straight for a Teensy 4.1 :)
 - Arduino Uno ($22.54 each) [Amazon Link](https://www.amazon.com/Arduino-A000066-ARDUINO-UNO-R3/dp/B008GRTSV6/)
 - Adafruit i2c LCD ($19.95 each) [Adafruit Link](https://www.adafruit.com/product/772)
 - USB Host Shield ($4.99) [HobbyKing Link](https://hobbyking.com/en_us/kingduino-compatible-usb-host-shield.html) - lots of clones of this board out there, this is just one example.
