@@ -1,12 +1,11 @@
 # Parts
 
-## Arduino Parts
-- Arduino Uno
-- Adafruit i2c LCD
-- USB Host Shield
+## Arduino Parts (this worked, but I really wish I'd gone straight for a Teensy 4.1!)
+- Arduino Uno ($22.54 each) [Amazon Link](https://www.amazon.com/Arduino-A000066-ARDUINO-UNO-R3/dp/B008GRTSV6/)
+- Adafruit i2c LCD ($19.95 each) [Adafruit Link](https://www.adafruit.com/product/772)
+- USB Host Shield ($4.99) [HobbyKing Link](https://hobbyking.com/en_us/kingduino-compatible-usb-host-shield.html) - lots of clones of this board out there, this is just one example.
   - Note that these shields are LOW-QUALITY and may be missing the voltage jumpers (solder blobs), etc.
-- 3D printed case
-
+- 3D printed case [Thingiverse Link](https://www.thingiverse.com/thing:4946701)
 
 
 ## RC Parts
@@ -19,4 +18,5 @@
 
 ## Misc Parts
 - XBOX ONE USB Controller ($24.69 each) [Amazon Link](https://www.amazon.com/gp/product/B08HYFNZL7)
-- Voltage Regulator ($8.89 for 10) [Amazon Link](https://www.amazon.com/gp/product/B07CP4P5XJ) - using one of these to step the RC car voltage down to 3v for the original toy ghost trap lights & sounds which will be switched by an RC switch
+- Voltage Regulator - 800ma ($8.89 for 10) [Amazon Link](https://www.amazon.com/gp/product/B07CP4P5XJ) - using one of these to step the RC car voltage down to 3v for the original toy ghost trap lights & sounds which will be switched by an RC switch
+- Voltage Regulator - 3a ($11.99 each) [Amazon Link](https://www.amazon.com/dp/B00C0KL1OM) - using one of these to step the RC car voltage down to 5v for the flashlight "headlights" for the RC car
