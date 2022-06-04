@@ -1,3 +1,5 @@
+//todo - cycle the sfx off after 15 seconds because it stops automatically.
+
 /*
 * Magic Wheelchair RC Ghostbusters trap
 * Based on work found in this video: https://www.youtube.com/watch?v=rYxwIrqE7q8
@@ -11,10 +13,23 @@
 *  
 */
 
-#include <EEPROM.h>
+#define HEADLIGHT_ON_PPM 1900
+#define HEADLIGHT_OFF_PPM 1000
+#define SFX_ON_PPM 1900
+#define SFX_OFF_PPM 1000
 
-bool yButtonOn = false;
-bool aButtonOn = false;
+
+
+#include <EEPROM.h>
+#include <Metro.h> //Include Metro library 
+
+Metro blinkMetro = Metro(500);
+Metro lcdKeyMetro = Metro(200);
+
+bool headlightBlink = false;
+
+bool headlightOn = false;
+bool sfxOn = false;
 bool steeringMode = false; //changed with the start button
 
 /*
@@ -103,14 +118,23 @@ void setup() {
   pinMode(sigPin, OUTPUT);
   digitalWrite(sigPin, !onState);  //set the PPM signal pin to the default state (off)
 
+
   // Set up the LCD's number of columns and rows and display static text
   lcd.begin(16, 2);
   lcd.setCursor(0, 0);
-  lcd.print("Steer trim: 0     ");
+  lcd.print("Who  You  Gonna");
   lcd.setCursor(0, 1);
-  lcd.print("Speed: 1");
+  lcd.print("Call?    Carter!");
+  delay(4000);
+  lcd.clear();
+  lcd.setCursor(0, 0);
+ lcd.print("Steer trim: 0     ");
+  lcd.setCursor(0, 1);
+  lcd.print("Speed: ");
+  lcd.print(speedSetting);
   
   steeringModeRefreshLCD();
+  functionsRefreshLCD();
   
   cli();
   TCCR1A = 0; // set entire TCCR1 register to 0
@@ -137,9 +161,13 @@ void lcdButtonCheck() {
     }
     if (buttons & BUTTON_LEFT) {
       Serial.println("LEFT");
+      steeringMode = 1;
+      steeringModeRefreshLCD();
     }
     if (buttons & BUTTON_RIGHT) {
       Serial.println("RIGHT");
+      steeringMode = 0;
+      steeringModeRefreshLCD();
     }
     if (buttons & BUTTON_SELECT) {
       Serial.println("SELECT");
@@ -147,10 +175,41 @@ void lcdButtonCheck() {
   }
   
 }
+
+void headlight(bool state) {
+  if (state) {
+    headlightOn = 1;
+    ppm[3]=HEADLIGHT_ON_PPM;
+    Serial.println("Headlight ON");
+  }
+  else {
+    headlightOn = 0;
+    ppm[3]=HEADLIGHT_OFF_PPM;
+    Serial.println("Headlight OFF");
+  }
+  functionsRefreshLCD();
+}
+
+void headlightToggle(){
+  if (!headlightOn) return;
+  if (!headlightBlink) return;
+  
+  if (ppm[3] != HEADLIGHT_ON_PPM) {
+          ppm[3]=HEADLIGHT_ON_PPM;
+        }
+        else {
+          ppm[3]=HEADLIGHT_OFF_PPM;
+        }  
+}
+
 void loop() {
   Usb.Task();
 
-  lcdButtonCheck();
+ 
+
+  if (blinkMetro.check() == 1) headlightToggle();      
+  if (lcdKeyMetro.check() == 1)  lcdButtonCheck();     
+ 
   
   if (Xbox.XboxOneConnected) {
 
@@ -179,26 +238,24 @@ void loop() {
     }
 
     if (Xbox.getButtonClick(START)){ // Switch Steering Mode
-      steeringMode = !steeringMode;
 
-      steeringModeRefreshLCD();
     }
 
     if (steeringMode) {
       if (Xbox.getAnalogHat(LeftHatX)) {
         if (Xbox.getAnalogHat(LeftHatX) > 2500 || Xbox.getAnalogHat(LeftHatX) < -2500) {
-          ppm[0] = map(Xbox.getAnalogHat(LeftHatX), -32768 , 32768, 1000, 2000) + steeringTrim;
+          ppm[0] = map(Xbox.getAnalogHat(LeftHatX), 32768 , -32768, 1000, 2000) + steeringTrim;
         } else {
-          ppm[0] = 1500 + steeringTrim;
+          ppm[0] = 1500 - steeringTrim;
         }
       }
     }
     else {
       if (Xbox.getAnalogHat(RightHatX)) {
         if (Xbox.getAnalogHat(RightHatX) > 2500 || Xbox.getAnalogHat(RightHatX) < -2500) {
-          ppm[0] = map(Xbox.getAnalogHat(RightHatX), -32768 , 32768, 1000, 2000) + steeringTrim;
+          ppm[0] = map(Xbox.getAnalogHat(RightHatX), 32768 , -32768, 1000, 2000) + steeringTrim;
         } else {
-          ppm[0] = 1500 + steeringTrim;
+          ppm[0] = 1500 - steeringTrim;
         }
       }
     }
@@ -220,8 +277,10 @@ void loop() {
     }
 
     if (speedSetting == 1) {
-      speedMax = 1590;
-      speedMin = 1410;
+      //speedMax = 1590;
+      //speedMin = 1410;
+      speedMax = 1650;
+      speedMin = 1350;      
     }
 
     if (speedSetting == 2) {
@@ -283,34 +342,39 @@ void loop() {
 */
 
     if (Xbox.getButtonClick(A)) {
-        if (aButtonOn == false) {
-          aButtonOn = true;
-          ppm[2]=1900;
-          Serial.println(F("A ON"));
+        if (sfxOn == false) {
+          sfxOn = true;
+          ppm[2]=SFX_ON_PPM;
+          Serial.println(F("SFX ON"));
         }
         else {
-          aButtonOn = false;
-          ppm[2]=1000;
-          Serial.println(F("A OFF"));
+          sfxOn = false;
+          ppm[2]=SFX_OFF_PPM;
+          Serial.println(F("SFX OFF"));
         }
+        functionsRefreshLCD();
       }
 
-    if (Xbox.getButtonClick(B))
+    if (Xbox.getButtonClick(B)) {
       Serial.println(F("B"));
+      headlightBlink = !headlightBlink; 
+      if (!headlightOn) headlight(true);  //turned on blink, but the headlight isn't on, so turn it off
+      if (!headlightBlink && headlightOn) headlight(false);   //turned off blink, turn off the headlight too
+      functionsRefreshLCD();
+    }
+      
+      
     if (Xbox.getButtonClick(X))
       Serial.println(F("X"));
+
+    //y is headlight
     if (Xbox.getButtonClick(Y)) {
-        if (yButtonOn == false) {
-          yButtonOn = true;
-          ppm[3]=1900;
-          Serial.println(F("Y ON"));
-        }
-        else {
-          yButtonOn = false;
-          ppm[3]=1000;
-          Serial.println(F("Y OFF"));
-        }
-      }
+       if (headlightOn) {
+        headlight(false);
+        headlightBlink = false;
+       }
+       else headlight(true);
+    }
 
 //    if (Xbox.getButtonPress(L2) > 0 || Xbox.getButtonPress(R2) > 0) {
 //      if (Xbox.getButtonPress(L2) > 0) {
@@ -392,6 +456,7 @@ ISR(TIMER1_COMPA_vect){  //leave this alone
 // Function to update steering trim setting information on LCD
 // Converts steeringTrimLCD from negative and positive numbers to L and R
 void steeringTrimRefreshLCD() {
+  Serial.println(steeringTrim);
   steeringTrimLCD = map(steeringTrim, -100, 100, -20, 20); // Remap steering trim adjustment to single increments
   if (steeringTrimLCD < 0) {
     steeringTrimLCD = abs(steeringTrimLCD);
@@ -410,6 +475,17 @@ void speedSettingRefreshLCD() {
   lcd.print(String(speedSetting));
 }
 
+void functionsRefreshLCD() {
+  lcd.setCursor(13, 1);
+  if (headlightOn) lcd.print("H");
+  else lcd.print(" ");
+  if (headlightBlink) lcd.print("B");
+  else lcd.print(" ");
+  if (sfxOn) lcd.print("S");
+  else lcd.print(" ");
+  
+  
+}
 void steeringModeRefreshLCD() {
   EEPROM.write(0, steeringMode);
 
