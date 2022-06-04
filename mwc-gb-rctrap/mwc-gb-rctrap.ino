@@ -11,21 +11,16 @@
 *  
 */
 
+#include <EEPROM.h>
 
 bool yButtonOn = false;
 bool aButtonOn = false;
+bool steeringMode = false; //changed with the start button
 
 /*
  * Download USB Host Shield Library First
  * https://github.com/felis/USB_Host_Shield_2.0/archive/master.zip
  */
-
-
-// Satisfy the IDE, which needs to see the include statment in the ino too.
-#ifdef dobogusinclude
-#include <spi4teensy3.h>
-#endif
-#include <SPI.h>
 
 
 // Includes for XBOX Controller
@@ -67,20 +62,15 @@ int speedMin = 1410;
 #define sigPin 3  //set PPM signal output pin on the arduino
 //////////////////////////////////////////////////////////////////
 
-#define SWITCH_PIN 16
 #define CHANNEL_TO_MODIFY 11
 #define SWITCH_STEP 100
-
-//byte previousSwitchValue;
 
 /*this array holds the servo values for the ppm signal
  change these values in your code (usually servo values move between 1000 and 2000)*/
 int ppm[CHANNEL_NUMBER];
 
 int currentChannelStep;
-//bool printAngle;
 uint8_t state = 0;
-
 
 
 void setup() {
@@ -106,8 +96,11 @@ void setup() {
     }
   }
 
+
+  steeringMode = EEPROM.read(0);
+  
+  
   pinMode(sigPin, OUTPUT);
-  pinMode(SWITCH_PIN, INPUT_PULLUP);
   digitalWrite(sigPin, !onState);  //set the PPM signal pin to the default state (off)
 
   // Set up the LCD's number of columns and rows and display static text
@@ -116,7 +109,9 @@ void setup() {
   lcd.print("Steer trim: 0     ");
   lcd.setCursor(0, 1);
   lcd.print("Speed: 1");
-
+  
+  steeringModeRefreshLCD();
+  
   cli();
   TCCR1A = 0; // set entire TCCR1 register to 0
   TCCR1B = 0;
@@ -130,9 +125,33 @@ void setup() {
   currentChannelStep = SWITCH_STEP;
 }
 
+void lcdButtonCheck() {
+  uint8_t buttons = lcd.readButtons();
 
+  if (buttons) {
+    if (buttons & BUTTON_UP) {
+      Serial.println("UP");
+    }
+    if (buttons & BUTTON_DOWN) {
+      Serial.println("DOWN");
+    }
+    if (buttons & BUTTON_LEFT) {
+      Serial.println("LEFT");
+    }
+    if (buttons & BUTTON_RIGHT) {
+      Serial.println("RIGHT");
+    }
+    if (buttons & BUTTON_SELECT) {
+      Serial.println("SELECT");
+    }
+  }
+  
+}
 void loop() {
   Usb.Task();
+
+  lcdButtonCheck();
+  
   if (Xbox.XboxOneConnected) {
 
     // Steering
@@ -154,29 +173,35 @@ void loop() {
       steeringTrim = steeringTrim + 5;
       steeringTrimRefreshLCD();
     }
-    if (Xbox.getButtonClick(BACK) || Xbox.getButtonClick(START)){ // Reset steering trim to 0
+    if (Xbox.getButtonClick(BACK)) { // Reset steering trim to 0
       steeringTrim = 0;
       steeringTrimRefreshLCD();
     }
 
-  /*
-    if (Xbox.getAnalogHat(LeftHatX)) {
-      if (Xbox.getAnalogHat(LeftHatX) > 2500 || Xbox.getAnalogHat(LeftHatX) < -2500) {
-        ppm[0] = map(Xbox.getAnalogHat(LeftHatX), -32768 , 32768, 1000, 2000) + steeringTrim;
-      } else {
-        ppm[0] = 1500 + steeringTrim;
-      }
-    }
-*/
+    if (Xbox.getButtonClick(START)){ // Switch Steering Mode
+      steeringMode = !steeringMode;
 
-    if (Xbox.getAnalogHat(RightHatX)) {
-      if (Xbox.getAnalogHat(RightHatX) > 2500 || Xbox.getAnalogHat(RightHatX) < -2500) {
-        ppm[0] = map(Xbox.getAnalogHat(RightHatX), -32768 , 32768, 1000, 2000) + steeringTrim;
-      } else {
-        ppm[0] = 1500 + steeringTrim;
-      }
+      steeringModeRefreshLCD();
     }
 
+    if (steeringMode) {
+      if (Xbox.getAnalogHat(LeftHatX)) {
+        if (Xbox.getAnalogHat(LeftHatX) > 2500 || Xbox.getAnalogHat(LeftHatX) < -2500) {
+          ppm[0] = map(Xbox.getAnalogHat(LeftHatX), -32768 , 32768, 1000, 2000) + steeringTrim;
+        } else {
+          ppm[0] = 1500 + steeringTrim;
+        }
+      }
+    }
+    else {
+      if (Xbox.getAnalogHat(RightHatX)) {
+        if (Xbox.getAnalogHat(RightHatX) > 2500 || Xbox.getAnalogHat(RightHatX) < -2500) {
+          ppm[0] = map(Xbox.getAnalogHat(RightHatX), -32768 , 32768, 1000, 2000) + steeringTrim;
+        } else {
+          ppm[0] = 1500 + steeringTrim;
+        }
+      }
+    }
     // Throttle
     // Attached to Xbox Left Joystick Y Axis
     // Allows adjustment of the speed range to allow a lower maximum speed to accommodate beginners
@@ -231,39 +256,41 @@ void loop() {
       Serial.println(F("Left"));
     if (Xbox.getButtonClick(RIGHT))
       Serial.println(F("Right"));
-//
-//    if (Xbox.getButtonClick(START))
-//      Serial.println(F("Start"));
-//    if (Xbox.getButtonClick(BACK))
-//      Serial.println(F("Back"));
-//    if (Xbox.getButtonClick(XBOX))
-//      Serial.println(F("Xbox"));
-//    if (Xbox.getButtonClick(SYNC))
-//      Serial.println(F("Sync"));
-//
-//    if (Xbox.getButtonClick(L1))
-//      Serial.println(F("L1"));
-//    if (Xbox.getButtonClick(R1))
-//      Serial.println(F("R1"));
-//    if (Xbox.getButtonClick(L2))
-//      Serial.println(F("L2"));
-//    if (Xbox.getButtonClick(R2))
-//      Serial.println(F("R2"));
-//    if (Xbox.getButtonClick(L3))
-//      Serial.println(F("L3"));
-//    if (Xbox.getButtonClick(R3))
-//      Serial.println(F("R3"));
-//
-//
+
+    if (Xbox.getButtonClick(START))
+      Serial.println(F("Start"));
+    if (Xbox.getButtonClick(BACK))
+      Serial.println(F("Back"));
+    if (Xbox.getButtonClick(XBOX))
+      Serial.println(F("Xbox"));
+ /* 
+    if (Xbox.getButtonClick(SYNC))
+      Serial.println(F("Sync"));
+
+
+    if (Xbox.getButtonClick(L1))
+      Serial.println(F("L1"));
+    if (Xbox.getButtonClick(R1))
+      Serial.println(F("R1"));
+    if (Xbox.getButtonClick(L2))
+      Serial.println(F("L2"));
+    if (Xbox.getButtonClick(R2))
+      Serial.println(F("R2"));
+    if (Xbox.getButtonClick(L3))
+      Serial.println(F("L3"));
+    if (Xbox.getButtonClick(R3))
+      Serial.println(F("R3"));
+*/
+
     if (Xbox.getButtonClick(A)) {
         if (aButtonOn == false) {
           aButtonOn = true;
-          ppm[3]=1900;
+          ppm[2]=1900;
           Serial.println(F("A ON"));
         }
         else {
           aButtonOn = false;
-          ppm[3]=1000;
+          ppm[2]=1000;
           Serial.println(F("A OFF"));
         }
       }
@@ -275,12 +302,12 @@ void loop() {
     if (Xbox.getButtonClick(Y)) {
         if (yButtonOn == false) {
           yButtonOn = true;
-          ppm[2]=1900;
+          ppm[3]=1900;
           Serial.println(F("Y ON"));
         }
         else {
           yButtonOn = false;
-          ppm[2]=1000;
+          ppm[3]=1000;
           Serial.println(F("Y OFF"));
         }
       }
@@ -321,7 +348,7 @@ Serial.print("CH3: ");Serial.print(ppm[2]);Serial.print("\t");
 Serial.print("CH4: ");Serial.print(ppm[3]);Serial.print("\t");
 
 Serial.print("\n");
-/*
+
 Serial.print("CH5: ");Serial.print(ppm[4]);Serial.print("\t");
 Serial.print("CH6: ");Serial.print(ppm[5]);Serial.print("\t");
 Serial.print("CH7: ");Serial.print(ppm[6]);Serial.print("\t");
@@ -382,3 +409,13 @@ void speedSettingRefreshLCD() {
   lcd.setCursor(7, 1);
   lcd.print(String(speedSetting));
 }
+
+void steeringModeRefreshLCD() {
+  EEPROM.write(0, steeringMode);
+
+  lcd.setCursor(15,0);
+  if (steeringMode) 
+    lcd.print("L");
+  else lcd.print("R");
+}
+  
