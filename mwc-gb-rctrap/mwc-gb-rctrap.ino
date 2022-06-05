@@ -1,4 +1,4 @@
-//todo - cycle the sfx off after 15 seconds because it stops automatically.
+//todo - the display of the steering mode gets disrupted by large steering trim adjustments
 
 /*
 * Magic Wheelchair RC Ghostbusters trap
@@ -25,6 +25,8 @@
 
 Metro blinkMetro = Metro(500);
 Metro lcdKeyMetro = Metro(200);
+Metro sfxMetro = Metro(15000);
+
 
 bool headlightBlink = false;
 
@@ -111,9 +113,18 @@ void setup() {
     }
   }
 
-
-  steeringMode = EEPROM.read(0);
+/*
+  //INITIALIZE EEPROM FOR A NEW ARDUINO
+  EEPROM.write(0,0);
+  EEPROM.write(1,0);
+  EEPROM.write(2,0);
+  EEPROM.write(3,0);
+  EEPROM.write(4,0);
+*/
   
+  steeringMode = EEPROM.read(0);
+  steeringTrim = readIntFromEEPROM(1);
+
   
   pinMode(sigPin, OUTPUT);
   digitalWrite(sigPin, !onState);  //set the PPM signal pin to the default state (off)
@@ -127,14 +138,17 @@ void setup() {
   lcd.print("Call?    Carter!");
   delay(4000);
   lcd.clear();
+  
   lcd.setCursor(0, 0);
- lcd.print("Steer trim: 0     ");
+  lcd.print("Steer trim:");
   lcd.setCursor(0, 1);
   lcd.print("Speed: ");
   lcd.print(speedSetting);
+
   
   steeringModeRefreshLCD();
   functionsRefreshLCD();
+  steeringTrimRefreshLCD();
   
   cli();
   TCCR1A = 0; // set entire TCCR1 register to 0
@@ -207,9 +221,15 @@ void loop() {
 
  
 
-  if (blinkMetro.check() == 1) headlightToggle();      
+  if (blinkMetro.check()  == 1)  headlightToggle();      
   if (lcdKeyMetro.check() == 1)  lcdButtonCheck();     
- 
+  if (sfxMetro.check() == 1 && sfxOn) {              //the soundfx module plays for approx 15 seconds and then shuts off
+    sfxOn = 0; 
+    ppm[2]=SFX_OFF_PPM;
+    Serial.println(F("SFX OFF"));
+    functionsRefreshLCD(); 
+  }
+     
   
   if (Xbox.XboxOneConnected) {
 
@@ -345,6 +365,7 @@ void loop() {
         if (sfxOn == false) {
           sfxOn = true;
           ppm[2]=SFX_ON_PPM;
+          sfxMetro.reset();
           Serial.println(F("SFX ON"));
         }
         else {
@@ -457,6 +478,8 @@ ISR(TIMER1_COMPA_vect){  //leave this alone
 // Converts steeringTrimLCD from negative and positive numbers to L and R
 void steeringTrimRefreshLCD() {
   Serial.println(steeringTrim);
+  writeIntIntoEEPROM(1, steeringTrim);
+  
   steeringTrimLCD = map(steeringTrim, -100, 100, -20, 20); // Remap steering trim adjustment to single increments
   if (steeringTrimLCD < 0) {
     steeringTrimLCD = abs(steeringTrimLCD);
@@ -493,5 +516,21 @@ void steeringModeRefreshLCD() {
   if (steeringMode) 
     lcd.print("L");
   else lcd.print("R");
+}
+
+
+void writeIntIntoEEPROM(int address, int number)
+{ 
+  byte byte1 = number >> 8;
+  byte byte2 = number & 0xFF;
+  EEPROM.write(address, byte1);
+  EEPROM.write(address + 1, byte2);
+}
+
+int readIntFromEEPROM(int address)
+{
+  byte byte1 = EEPROM.read(address);
+  byte byte2 = EEPROM.read(address + 1);
+  return (byte1 << 8) + byte2;
 }
   
